@@ -2,6 +2,8 @@ package com.example.dongja94.samplemediaplayer;
 
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -10,6 +12,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.SeekBar;
 
 import java.io.IOException;
 
@@ -28,6 +31,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     PlayerState mState;
+    SeekBar progressView;
+    boolean isSeeking = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +50,33 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        progressView = (SeekBar)findViewById(R.id.seek_progress);
+        progressView.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            int progress;
+            private static final int PROGRESS_NOT_CHANGED = -1;
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser) {
+                    this.progress = progress;
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                progress = PROGRESS_NOT_CHANGED;
+                isSeeking = true;
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                if (progress != PROGRESS_NOT_CHANGED) {
+                    if (mState == PlayerState.STATE_STARTED) {
+                        mPlayer.seekTo(progress);
+                    }
+                }
+                isSeeking = false;
+            }
+        });
         mPlayer = MediaPlayer.create(this, R.raw.winter_blues);
         mState = PlayerState.STATE_PREPARED;
 
@@ -70,6 +102,8 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //        }
 
+        progressView.setMax(mPlayer.getDuration());
+
         mPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
             @Override
             public boolean onError(MediaPlayer mp, int what, int extra) {
@@ -91,8 +125,10 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 if (mState == PlayerState.STATE_PREPARED || mState == PlayerState.STATE_PAUSED) {
+                    mPlayer.seekTo(progressView.getProgress());
                     mPlayer.start();
                     mState = PlayerState.STATE_STARTED;
+                    mHadler.post(updateProgress);
                 }
             }
         });
@@ -121,6 +157,21 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
+    Handler mHadler = new Handler(Looper.getMainLooper());
+    private static final int INTERVAL = 50;
+
+    Runnable updateProgress = new Runnable() {
+        @Override
+        public void run() {
+            if (mState == PlayerState.STATE_STARTED) {
+                if (!isSeeking) {
+                    progressView.setProgress(mPlayer.getCurrentPosition());
+                }
+                mHadler.postDelayed(this, INTERVAL);
+            }
+        }
+    };
 
     @Override
     protected void onDestroy() {
