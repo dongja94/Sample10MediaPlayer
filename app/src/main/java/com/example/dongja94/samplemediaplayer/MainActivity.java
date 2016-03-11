@@ -1,8 +1,10 @@
 package com.example.dongja94.samplemediaplayer;
 
 import android.content.Context;
+import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -236,9 +238,49 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        btn = (Button)findViewById(R.id.btn_list);
+        btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivityForResult(new Intent(MainActivity.this, MusicListActivity.class), RC_LIST);
+            }
+        });
+
     }
 
+    private static final int RC_LIST = 1;
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == RC_LIST) {
+            if (resultCode == RESULT_OK) {
+                Uri uri = data.getData();
+                String displayName = data.getStringExtra("displayName");
+                String path = data.getStringExtra("file");
+                setTitle(displayName);
+                mPlayer.reset();
+                mState = PlayerState.STATE_IDLE;
+                try {
+                    mPlayer.setDataSource(this, uri);
+                    mState = PlayerState.STATE_INITIALIZED;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                if (mState == PlayerState.STATE_INITIALIZED) {
+                    try {
+                        mPlayer.prepare();
+                        mState = PlayerState.STATE_PREPARED;
+                        progressView.setMax(mPlayer.getDuration());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            }
+        }
+    }
 
     Handler mHadler = new Handler(Looper.getMainLooper());
     private static final int INTERVAL = 50;

@@ -89,4 +89,14 @@
         android:layout_toEndOf="@+id/btn_stop"
         android:checked="false" />
 
+    <Button
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="List"
+        android:id="@+id/btn_list"
+        android:layout_above="@+id/seek_progress"
+        android:layout_toRightOf="@+id/check_mute"
+        android:layout_toEndOf="@+id/check_mute" />
+
 </RelativeLayout>
